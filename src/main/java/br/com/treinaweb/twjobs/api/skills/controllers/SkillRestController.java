@@ -3,11 +3,13 @@ package br.com.treinaweb.twjobs.api.skills.controllers;
 import java.util.List;
 
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import br.com.treinaweb.twjobs.api.skills.dtos.SkillResponse;
 import br.com.treinaweb.twjobs.api.skills.mappers.SkillMapper;
+import br.com.treinaweb.twjobs.core.exceptions.SkillNotFoundException;
 import br.com.treinaweb.twjobs.core.repositories.SkillRepository;
 import lombok.RequiredArgsConstructor;
 
@@ -25,6 +27,13 @@ public class SkillRestController {
             .stream()
             .map(skillMapper::toSkillResponse)
             .toList();
+    }
+
+    @GetMapping("/{id}")
+    public SkillResponse findById(@PathVariable Long id) {
+        return skillRepository.findById(id)
+            .map(skillMapper::toSkillResponse)
+            .orElseThrow(SkillNotFoundException::new);
     }
     
 }
