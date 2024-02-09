@@ -4,6 +4,7 @@ import java.util.List;
 
 import org.springframework.beans.BeanUtils;
 import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -62,6 +63,14 @@ public class SkillRestController {
         BeanUtils.copyProperties(skillRequest, skill, "id");
         skill = skillRepository.save(skill);
         return skillMapper.toSkillResponse(skill);
+    }
+
+    @DeleteMapping("/{id}")
+    @ResponseStatus(code = HttpStatus.NO_CONTENT)
+    public void delete(@PathVariable Long id) {
+        var skill = skillRepository.findById(id)
+            .orElseThrow(SkillNotFoundException::new);
+        skillRepository.delete(skill);
     }
     
 }
