@@ -1,11 +1,8 @@
 package br.com.treinaweb.twjobs.api.skills.controllers;
 
-import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
-import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
-
-import java.util.List;
-
 import org.springframework.beans.BeanUtils;
+import org.springframework.hateoas.CollectionModel;
+import org.springframework.hateoas.EntityModel;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -18,6 +15,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
+import br.com.treinaweb.twjobs.api.skills.assemblers.SkillAssembler;
 import br.com.treinaweb.twjobs.api.skills.dtos.SkillRequest;
 import br.com.treinaweb.twjobs.api.skills.dtos.SkillResponse;
 import br.com.treinaweb.twjobs.api.skills.mappers.SkillMapper;
@@ -32,71 +30,39 @@ import lombok.RequiredArgsConstructor;
 public class SkillRestController {
 
     private final SkillMapper skillMapper;
+    private final SkillAssembler skillAssembler;
     private final SkillRepository skillRepository;
 
     @GetMapping
-    public List<SkillResponse> findAll() {
+    public CollectionModel<EntityModel<SkillResponse>> findAll() {
         var skills = skillRepository.findAll()
             .stream()
             .map(skillMapper::toSkillResponse)
             .toList();
 
-        skills.forEach(skill -> {
-            var id = skill.getId();
-
-            var selfLink = linkTo(methodOn(SkillRestController.class).findById(id))
-                .withSelfRel()
-                .withType("GET");
-
-            var updateLink = linkTo(methodOn(SkillRestController.class).update(id, null))
-                .withRel("update")
-                .withType("PUT");
-
-            var deleteLink = linkTo(methodOn(SkillRestController.class).delete(id))
-                .withRel("delete")
-                .withType("DELETE");
-            
-
-            skill.add(selfLink, updateLink, deleteLink);
-        });
-
-        return skills;
+        return skillAssembler.toCollectionModel(skills);
     }
 
     @GetMapping("/{id}")
-    public SkillResponse findById(@PathVariable Long id) {
+    public EntityModel<SkillResponse> findById(@PathVariable Long id) {
         var skill = skillRepository.findById(id)
             .map(skillMapper::toSkillResponse)
             .orElseThrow(SkillNotFoundException::new);
 
-        var selfLink = linkTo(methodOn(SkillRestController.class).findById(id))
-            .withSelfRel()
-            .withType("GET");
-
-        var updateLink = linkTo(methodOn(SkillRestController.class).update(id, null))
-            .withRel("update")
-            .withType("PUT");
-
-        var deleteLink = linkTo(methodOn(SkillRestController.class).delete(id))
-            .withRel("delete")
-            .withType("DELETE");
-        
-
-        skill.add(selfLink, updateLink, deleteLink);
-
-        return skill;
+        return skillAssembler.toModel(skill);
     }
 
     @PostMapping
     @ResponseStatus(code = HttpStatus.CREATED)
-    public SkillResponse create(@Valid @RequestBody SkillRequest skillRequest) {
+    public EntityModel<SkillResponse> create(@Valid @RequestBody SkillRequest skillRequest) {
         var skill = skillMapper.toSkill(skillRequest);
         skill = skillRepository.save(skill);
-        return skillMapper.toSkillResponse(skill);
+        var skillResponse = skillMapper.toSkillResponse(skill);
+        return skillAssembler.toModel(skillResponse);
     }
 
     @PutMapping("/{id}")
-    public SkillResponse update(
+    public EntityModel<SkillResponse> update(
         @PathVariable Long id, 
         @Valid @RequestBody SkillRequest skillRequest
     ) {
@@ -104,7 +70,8 @@ public class SkillRestController {
             .orElseThrow(SkillNotFoundException::new);
         BeanUtils.copyProperties(skillRequest, skill, "id");
         skill = skillRepository.save(skill);
-        return skillMapper.toSkillResponse(skill);
+        var skillResponse = skillMapper.toSkillResponse(skill);
+        return skillAssembler.toModel(skillResponse);
     }
 
     @DeleteMapping("/{id}")
