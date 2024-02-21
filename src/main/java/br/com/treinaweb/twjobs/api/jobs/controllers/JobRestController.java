@@ -1,9 +1,10 @@
 package br.com.treinaweb.twjobs.api.jobs.controllers;
 
-import java.util.List;
-
 import org.springframework.beans.BeanUtils;
+import org.springframework.hateoas.CollectionModel;
+import org.springframework.hateoas.EntityModel;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -14,6 +15,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
+import br.com.treinaweb.twjobs.api.jobs.assemblers.JobAssembler;
 import br.com.treinaweb.twjobs.api.jobs.dtos.JobRequest;
 import br.com.treinaweb.twjobs.api.jobs.dtos.JobResponse;
 import br.com.treinaweb.twjobs.api.jobs.mappers.JobMapper;
@@ -28,33 +30,37 @@ import lombok.RequiredArgsConstructor;
 public class JobRestController {
 
     private final JobMapper jobMapper;
+    private final JobAssembler jobAssembler;
     private final JobRepository jobRepository;
 
     @GetMapping
-    public List<JobResponse> findAll() {
-        return jobRepository.findAll()
+    public CollectionModel<EntityModel<JobResponse>> findAll() {
+        var jobs = jobRepository.findAll()
             .stream()
             .map(jobMapper::toJobResponse)
             .toList();
+        return jobAssembler.toCollectionModel(jobs);
     }
 
     @GetMapping("/{id}")
-    public JobResponse findById(@PathVariable Long id) {
+    public EntityModel<JobResponse> findById(@PathVariable Long id) {
         var job = jobRepository.findById(id)
             .orElseThrow(JobNotFoundException::new);
-        return jobMapper.toJobResponse(job);
+        var jobResponse = jobMapper.toJobResponse(job);
+        return jobAssembler.toModel(jobResponse);
     }
 
     @PostMapping
     @ResponseStatus(code = HttpStatus.CREATED)
-    public JobResponse create(@RequestBody @Valid JobRequest jobRequest) {
+    public EntityModel<JobResponse> create(@RequestBody @Valid JobRequest jobRequest) {
         var job = jobMapper.toJob(jobRequest);
         job = jobRepository.save(job);
-        return jobMapper.toJobResponse(job);
+        var jobResponse = jobMapper.toJobResponse(job);
+        return jobAssembler.toModel(jobResponse);
     }
 
     @PutMapping("/{id}")
-    public JobResponse update(
+    public EntityModel<JobResponse> update(
         @RequestBody @Valid JobRequest jobRequest, 
         @PathVariable Long id
     ) {
@@ -63,15 +69,16 @@ public class JobRestController {
         var jobData = jobMapper.toJob(jobRequest);
         BeanUtils.copyProperties(jobData, job, "id");
         job = jobRepository.save(job);
-        return jobMapper.toJobResponse(job);
+        var jobResponse = jobMapper.toJobResponse(job);
+        return jobAssembler.toModel(jobResponse);
     }
 
     @DeleteMapping("/{id}")
-    @ResponseStatus(code = HttpStatus.NO_CONTENT)
-    public void delete(@PathVariable Long id) {
+    public ResponseEntity<?> delete(@PathVariable Long id) {
         var job = jobRepository.findById(id)
             .orElseThrow(JobNotFoundException::new);
         jobRepository.delete(job);
+        return ResponseEntity.noContent().build();
     }
     
 }
