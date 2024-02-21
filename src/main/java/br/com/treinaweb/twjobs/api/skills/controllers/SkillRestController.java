@@ -1,6 +1,8 @@
 package br.com.treinaweb.twjobs.api.skills.controllers;
 
 import org.springframework.beans.BeanUtils;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PagedResourcesAssembler;
 import org.springframework.hateoas.CollectionModel;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.http.HttpStatus;
@@ -32,15 +34,14 @@ public class SkillRestController {
     private final SkillMapper skillMapper;
     private final SkillAssembler skillAssembler;
     private final SkillRepository skillRepository;
+    private final PagedResourcesAssembler<SkillResponse> pagedResourcesAssembler;
 
     @GetMapping
-    public CollectionModel<EntityModel<SkillResponse>> findAll() {
-        var skills = skillRepository.findAll()
-            .stream()
-            .map(skillMapper::toSkillResponse)
-            .toList();
+    public CollectionModel<EntityModel<SkillResponse>> findAll(Pageable pageable) {
+        var skills = skillRepository.findAll(pageable)
+            .map(skillMapper::toSkillResponse);
 
-        return skillAssembler.toCollectionModel(skills);
+        return pagedResourcesAssembler.toModel(skills, skillAssembler);
     }
 
     @GetMapping("/{id}")
