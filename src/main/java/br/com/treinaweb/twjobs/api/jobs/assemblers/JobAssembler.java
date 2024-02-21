@@ -40,7 +40,7 @@ public class JobAssembler implements SimpleRepresentationModelAssembler<JobRespo
 
     @Override
     public void addLinks(CollectionModel<EntityModel<JobResponse>> resources) {
-        var selfLink = linkTo(methodOn(JobRestController.class).findAll())
+        var selfLink = linkTo(methodOn(JobRestController.class).findAll(null))
             .withSelfRel()
             .withType("GET");
 

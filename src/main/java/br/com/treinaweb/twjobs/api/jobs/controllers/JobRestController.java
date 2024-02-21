@@ -1,6 +1,8 @@
 package br.com.treinaweb.twjobs.api.jobs.controllers;
 
 import org.springframework.beans.BeanUtils;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PagedResourcesAssembler;
 import org.springframework.hateoas.CollectionModel;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.http.HttpStatus;
@@ -32,14 +34,13 @@ public class JobRestController {
     private final JobMapper jobMapper;
     private final JobAssembler jobAssembler;
     private final JobRepository jobRepository;
+    private final PagedResourcesAssembler<JobResponse> pagedResourcesAssembler;
 
     @GetMapping
-    public CollectionModel<EntityModel<JobResponse>> findAll() {
-        var jobs = jobRepository.findAll()
-            .stream()
-            .map(jobMapper::toJobResponse)
-            .toList();
-        return jobAssembler.toCollectionModel(jobs);
+    public CollectionModel<EntityModel<JobResponse>> findAll(Pageable pageable) {
+        var jobs = jobRepository.findAll(pageable)
+            .map(jobMapper::toJobResponse);
+        return pagedResourcesAssembler.toModel(jobs, jobAssembler);
     }
 
     @GetMapping("/{id}")
